@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../output/lib/libclient.a CMakeFiles/client.dir/Client/MyProtoClient.cpp.o
+/usr/bin/ranlib ../output/lib/libclient.a

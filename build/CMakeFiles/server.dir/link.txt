@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../output/lib/libserver.a CMakeFiles/server.dir/Server/MyProtoServer.cpp.o
+/usr/bin/ranlib ../output/lib/libserver.a

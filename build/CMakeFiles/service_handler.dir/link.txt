@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../output/lib/libservice_handler.a CMakeFiles/service_handler.dir/ServiceHandler/BusinessHandler.cpp.o
+/usr/bin/ranlib ../output/lib/libservice_handler.a

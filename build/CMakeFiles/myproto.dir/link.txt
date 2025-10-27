@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../output/lib/libmyproto.a CMakeFiles/myproto.dir/Myproto/myproto.cpp.o CMakeFiles/myproto.dir/Myproto/ReliableMsgManager.cpp.o CMakeFiles/myproto.dir/Myproto/ThreadPool.cc.o
+/usr/bin/ranlib ../output/lib/libmyproto.a

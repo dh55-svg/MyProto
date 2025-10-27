@@ -1,0 +1,8 @@
+/home/dh/code/MyProtoCode/output/build_release/CMakeFiles/myproto_server.dir
+/home/dh/code/MyProtoCode/output/build_release/CMakeFiles/myproto_client_test.dir
+/home/dh/code/MyProtoCode/output/build_release/CMakeFiles/edit_cache.dir
+/home/dh/code/MyProtoCode/output/build_release/CMakeFiles/rebuild_cache.dir
+/home/dh/code/MyProtoCode/output/build_release/CMakeFiles/list_install_components.dir
+/home/dh/code/MyProtoCode/output/build_release/CMakeFiles/install.dir
+/home/dh/code/MyProtoCode/output/build_release/CMakeFiles/install/local.dir
+/home/dh/code/MyProtoCode/output/build_release/CMakeFiles/install/strip.dir

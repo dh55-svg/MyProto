@@ -1,0 +1,8 @@
+/home/dh/code/MyProtoCode/build/CMakeFiles/myproto_server.dir
+/home/dh/code/MyProtoCode/build/CMakeFiles/myproto_client_test.dir
+/home/dh/code/MyProtoCode/build/CMakeFiles/edit_cache.dir
+/home/dh/code/MyProtoCode/build/CMakeFiles/rebuild_cache.dir
+/home/dh/code/MyProtoCode/build/CMakeFiles/list_install_components.dir
+/home/dh/code/MyProtoCode/build/CMakeFiles/install.dir
+/home/dh/code/MyProtoCode/build/CMakeFiles/install/local.dir
+/home/dh/code/MyProtoCode/build/CMakeFiles/install/strip.dir
