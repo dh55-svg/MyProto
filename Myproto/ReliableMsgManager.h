@@ -13,7 +13,7 @@
 const int MAX_RETRY_COUNT = 3; // 最大重传次数
 const int RETRY_INTERVAL_MS = 1000; // 重传间隔（毫秒）
 
-// 等待确认的消息信息
+// 等待确认的消息信息就是已经发送但没确认消息的数据
 struct PendingMessage {
     MyProtoMsg msg; // 消息内容
     std::chrono::steady_clock::time_point sendTime; // 发送时间
@@ -50,7 +50,7 @@ private:
     // 按连接保存已处理的消息序列号，用于去重
     std::unordered_map<std::string, std::unordered_set<uint32_t>> processedSequences_;
     
-    // 修改：保存连接名称到连接弱指针的映射，避免循环引用
+    // 保存连接名称到连接弱指针的映射，避免循环引用
     std::unordered_map<std::string, std::weak_ptr<muduo::net::TcpConnection>> connectionMap_;
     
     // 发送确认消息

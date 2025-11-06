@@ -89,6 +89,7 @@ void ReliableMsgManager::processAckMessage(const muduo::net::TcpConnectionPtr& c
 }
 
 // 处理接收到的数据消息（返回是否为新消息）
+//就是将新来的数据消息进行去重处理，已经处理过的消息就不再处理，返回false
 bool ReliableMsgManager::processDataMessage(const muduo::net::TcpConnectionPtr& conn, const MyProtoMsg& msg) {
     if (!conn || !conn->connected()) {
         return false;
@@ -178,60 +179,88 @@ muduo::net::TcpConnectionPtr ReliableMsgManager::getConnectionByName(const std::
 }
 
 
+/**
+ * 检查并处理超时消息的核心方法
+ * 该方法会遍历所有待确认的消息，检查是否超时，如果超时则进行重传或标记失败
+ */
 void ReliableMsgManager::checkTimeoutMessages() {
+    // 加锁保证线程安全，防止并发访问导致的数据竞争
     std::lock_guard<std::mutex> lock(mutex_);
+    // 获取当前时间，用于计算消息是否超时
     auto now = std::chrono::steady_clock::now();
     
+    // 遍历所有连接的待确认消息列表
     for (auto& connPair : pendingMessages_) {
+        // 获取连接名称和该连接对应的消息映射表
         std::string connName = connPair.first;
         auto& msgMap = connPair.second;
         
+        // 遍历该连接下的所有待确认消息（使用迭代器以便在遍历时删除元素）
         for (auto it = msgMap.begin(); it != msgMap.end();) {
+            // 获取当前消息和其发送时间
             auto& pendingMsg = it->second;
+            // 计算消息已发送的时间（毫秒）
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - pendingMsg.sendTime).count();
             
+            // 检查消息是否超时
             if (duration > RETRY_INTERVAL_MS) {
+                // 检查是否超过最大重试次数
                 if (pendingMsg.retryCount < MAX_RETRY_COUNT) {
-                    pendingMsg.retryCount++; 
+                    // 增加重试计数并更新发送时间
+                    pendingMsg.retryCount++;
                     pendingMsg.sendTime = now;
                     
                     try {
+                        // 通过连接名称获取连接指针
                         muduo::net::TcpConnectionPtr conn = getConnectionByName(connName);
                         
+                        // 检查连接是否有效且已连接
                         if (conn && conn->connected()) {
-                            // 确保重发消息时版本号正确
+                            // 确保重发消息时版本号正确设置为1
                             pendingMsg.msg.head.version = 1;
+                            // 创建编码器并编码消息
                             MyProtoEncode encoder;
                             uint32_t len = 0;
                             uint8_t* data = encoder.encode(const_cast<MyProtoMsg*>(&pendingMsg.msg), len);
                             
                             if (data && len > 0) {
+                                // 发送重编码后的消息
                                 conn->send(data, len);
+                                // 输出调试信息
                                 std::cout << "Retrying message, sequence: " << it->first << ", retry count: " << pendingMsg.retryCount << std::endl;
+                                // 释放编码后的缓冲区内存
                                 delete[] data;
+                                // 移动到下一个消息
                                 ++it;
                             } else {
+                                // 编码失败，从待确认列表中删除该消息
                                 std::cout << "Failed to encode message during retry, sequence: " << it->first << std::endl;
                                 it = msgMap.erase(it);
                             }
                         } else {
-                            // 连接无效或已断开
+                            // 连接无效或已断开，从待确认列表中删除该消息
                             std::cout << "Connection invalid during retry, sequence: " << it->first << std::endl;
                             it = msgMap.erase(it);
                         }
                     } catch (const std::exception& e) {
+                        // 捕获并处理重传过程中的异常
                         std::cerr << "Error during message retry: " << e.what() << std::endl;
+                        // 异常情况下也从待确认列表中删除该消息
                         it = msgMap.erase(it);
                     }
                 } else {
+                    // 超过最大重试次数，标记消息发送失败
                     std::cout << "Message failed after max retries, sequence: " << it->first << std::endl;
+                    // 从待确认列表中删除该消息
                     it = msgMap.erase(it);
                 }
             } else {
+                // 消息未超时，继续检查下一个消息
                 ++it;
             }
         }
         
+        // 如果该连接下没有待确认消息了，清理对应的连接条目
         if (msgMap.empty()) {
             pendingMessages_.erase(connPair.first);
         }

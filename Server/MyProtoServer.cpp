@@ -24,7 +24,7 @@ MyProtoServer::MyProtoServer(EventLoop* loop, const muduo::net::InetAddress& lis
     );
     
     // 设置定时器，定期检查超时消息
-    loop->runEvery(0.5, std::bind(&MyProtoServer::onTimeout, this));
+    loop->runEvery(2, std::bind(&MyProtoServer::onTimeout, this));
 }
 
 MyProtoServer::~MyProtoServer() {

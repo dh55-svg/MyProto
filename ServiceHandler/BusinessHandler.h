@@ -27,7 +27,7 @@ public:
     
     // 发送响应消息
     uint32_t sendResponse(const TcpConnectionPtr& conn, uint16_t serverId, const json& responseBody);
-    
+
 private:
     std::shared_ptr<ConnectionHandler> connectionHandler_;
     //消息路由机制
