@@ -39,8 +39,25 @@ public:
     void checkTimeoutMessages();
     // 清理连接相关资源
     void cleanupConnection(const std::string& connName);
-    
+    // 添加批量确认方法
+    void sendBatchAck(const muduo::net::TcpConnectionPtr& conn, uint32_t maxSequence);
 private:
+
+    // 保存每个连接的最后确认序列号
+    std::unordered_map<std::string, uint32_t> lastAckedSequence_;
+    // 批量确认定时器
+    std::unordered_map<std::string, std::chrono::steady_clock::time_point> lastAckTime_;
+    struct ConnectionStatus{
+        int avgRTT; // 平均往返时间
+        int lastRTT; // 上次往返时间
+        int rttVar; // RTT方差
+        int timeoutInterval; // 当前超时时间
+        int inflightMessages; // 飞行中消息数量
+    };
+    // 按连接保存网络统计信息
+    unordered_map<string, ConnectionStatus> connectionStatusMap_;
+    // 计算重传超时时间
+    int calculateTimeout(int rtt, int variance);
     std::mutex mutex_; // 保护共享数据
     uint32_t nextSequence_; // 下一个要使用的序列号
     

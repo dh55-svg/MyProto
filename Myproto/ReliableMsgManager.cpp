@@ -71,14 +71,60 @@ void ReliableMsgManager::processAckMessage(const muduo::net::TcpConnectionPtr& c
     
     std::string connName = conn->name();
     uint32_t sequence = msg.head.sequence;
+    auto now = std::chrono::steady_clock::now();
     
     // 查找并移除已确认的消息
     auto connIt = pendingMessages_.find(connName);
     if (connIt != pendingMessages_.end()) {
         auto msgIt = connIt->second.find(sequence);
         if (msgIt != connIt->second.end()) {
-            // 消息已确认，从待确认列表中删除
-            connIt->second.erase(msgIt);
+            if(msg.head.type==2)
+            {
+                uint32_t maxSequence=msg.head.sequence;
+                for(auto it=connIt->second.begin();it!=connIt->second.end();)
+                {
+                    if(it->first<=maxSequence)
+                    {
+                        auto rtt=chrono::duration_cast<chrono::milliseconds>(now-msgIt->second.sendTime).count();
+                        // 更新连接的RTT统计
+                        ConnectionStatus& status = connectionStatusMap_[connName];
+                        if(status.avgRTT==0){
+                            // 首次测量
+                            status.avgRTT = rtt;
+                            status.rttVar = rtt / 2;
+                        }else{
+                            // 平滑更新RTT和方差
+                            int delta=abs(rtt-status.avgRTT);
+                            status.rttVar = (3 * status.rttVar + delta) / 4;
+                            status.avgRTT = (7 * status.avgRTT + rtt) / 8;
+                        }
+                        // 计算新的超时时间
+                        status.timeoutInterval = calculateTimeout(status.avgRTT, status.rttVar);
+                        it=connIt->second.erase(it);
+                    }
+                    else
+                    {
+                       auto rtt=chrono::duration_cast<chrono::milliseconds>(now-msgIt->second.sendTime).count();
+                        // 更新连接的RTT统计
+                        ConnectionStatus& status = connectionStatusMap_[connName];
+                        if(status.avgRTT==0){
+                            // 首次测量
+                            status.avgRTT = rtt;
+                            status.rttVar = rtt / 2;
+                        }else{
+                            // 平滑更新RTT和方差
+                            int delta=abs(rtt-status.avgRTT);
+                            status.rttVar = (3 * status.rttVar + delta) / 4;
+                            status.avgRTT = (7 * status.avgRTT + rtt) / 8;
+                        }
+                        // 计算新的超时时间
+                        status.timeoutInterval = calculateTimeout(status.avgRTT, status.rttVar);
+                        // 消息已确认，从待确认列表中删除
+                        connIt->second.erase(msgIt); 
+                    }
+                }
+            }
+            
             
             // 如果该连接没有待确认消息，清理连接映射
             if (connIt->second.empty()) {
@@ -87,7 +133,12 @@ void ReliableMsgManager::processAckMessage(const muduo::net::TcpConnectionPtr& c
         }
     }
 }
-
+int ReliableMsgManager::calculateTimeout(int avgRTT, int rttVar) {
+    // 超时时间 = 平均RTT + 4 * RTT方差
+    // 增加一个最小和最大值限制
+    int timeout = avgRTT + 4 * rttVar;
+    return max(100, min(timeout, 10000)); // 最小100ms，最大10s
+}
 // 处理接收到的数据消息（返回是否为新消息）
 //就是将新来的数据消息进行去重处理，已经处理过的消息就不再处理，返回false
 bool ReliableMsgManager::processDataMessage(const muduo::net::TcpConnectionPtr& conn, const MyProtoMsg& msg) {
@@ -125,16 +176,25 @@ bool ReliableMsgManager::processDataMessage(const muduo::net::TcpConnectionPtr& 
     auto& processed = processedSequences_[connName];
     if (processed.count(sequence) > 0) {
         // 消息已处理过，发送确认但不进行业务处理
-        sendAck(conn, sequence);
-        std::cout << "[ReliableManager] Duplicate message detected, sequence: " << sequence << ", skipping" << std::endl;
+        
         return false;
     }
     
     // 记录消息已处理
     processed.insert(sequence);
-    
-    // 发送确认消息
-    sendAck(conn, sequence);
+    // 更新最后处理的序列号
+    auto& lastAcked=lastAckedSequence_[connName];
+    if(sequence>lastAcked){
+        lastAcked=sequence;
+    }
+    auto now=std::chrono::steady_clock::now();
+    auto& lastTime=lastAckTime_[connName];
+    auto timeSinceLastAck=std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTime).count();
+    if(timeSinceLastAck>50||(sequence-lastAcked)>10){
+        // 超过50ms未发送确认，或者累计未确认消息超过10条，发送批量确认
+        sendBatchAck(conn,lastAcked);
+        lastTime=now;
+    }
     
     // 消息为新消息，需要进行业务处理
     return true;
@@ -177,7 +237,23 @@ muduo::net::TcpConnectionPtr ReliableMsgManager::getConnectionByName(const std::
     }
     return nullptr;
 }
-
+void ReliableMsgManager::sendBatchAck(const muduo::net::TcpConnectionPtr& conn, uint32_t maxSequence)
+{
+    if(!conn||!conn->connected()){
+        return;
+    }
+    MyProtoMsg ackmsg;
+    ackmsg.head.type=2; //确认消息类型
+    ackmsg.head.sequence=maxSequence;// 最大已确认序列号
+    ackmsg.head.version=1; // 设置版本号为1
+    MyProtoEncode encoder;
+    uint32_t len=0;
+    uint8_t* data=encoder.encode(&ackmsg,len);
+    if (data && len > 0) {
+        conn->send(data, len);
+        delete[] data;
+    }
+}
 
 /**
  * 检查并处理超时消息的核心方法
@@ -195,6 +271,11 @@ void ReliableMsgManager::checkTimeoutMessages() {
         std::string connName = connPair.first;
         auto& msgMap = connPair.second;
         
+        int timeoutInterval = RETRY_INTERVAL_MS; // 默认超时时间1秒
+        auto statusIt=connectionStatusMap_.find(connName);
+        if(statusIt!=connectionStatusMap_.end()){
+            timeoutInterval=statusIt->second.timeoutInterval;
+        }
         // 遍历该连接下的所有待确认消息（使用迭代器以便在遍历时删除元素）
         for (auto it = msgMap.begin(); it != msgMap.end();) {
             // 获取当前消息和其发送时间
@@ -203,7 +284,7 @@ void ReliableMsgManager::checkTimeoutMessages() {
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - pendingMsg.sendTime).count();
             
             // 检查消息是否超时
-            if (duration > RETRY_INTERVAL_MS) {
+            if (duration > timeoutInterval) {
                 // 检查是否超过最大重试次数
                 if (pendingMsg.retryCount < MAX_RETRY_COUNT) {
                     // 增加重试计数并更新发送时间

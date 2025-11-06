@@ -69,6 +69,14 @@
     "typeinfo": "cpp",
     "valarray": "cpp",
     "variant": "cpp",
-    "iomanip": "cpp"
+    "iomanip": "cpp",
+    "future": "cpp",
+    "any": "cpp",
+    "*.inc": "cpp",
+    "source_location": "cpp",
+    "csignal": "cpp",
+    "codecvt": "cpp",
+    "coroutine": "cpp",
+    "fstream": "cpp"
   }
 }

@@ -1,0 +1,16 @@
+{
+    "data": {
+        "sequence": 1804289383,
+        "test": "Hello, muduo!",
+        "timestamp": 1762422926
+    },
+    "metadata": {
+        "client_ip": "127.0.0.1",
+        "client_port": 46810,
+        "connection_name": "MyProtoServer-0.0.0.0:8888#1",
+        "message_type": 0,
+        "sequence": 1,
+        "server_id": 1,
+        "version": 1
+    }
+}

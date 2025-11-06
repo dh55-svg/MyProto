@@ -2373,8 +2373,29 @@ CMakeFiles/myproto_server.dir/main.cpp.o: ../../main.cpp \
   /usr/include/c++/11/atomic \
   /usr/include/muduo/base/Mutex.h \
   /usr/include/muduo/base/CurrentThread.h \
-  /usr/include/muduo/net/TimerId.h
+  /usr/include/muduo/net/TimerId.h \
+  /usr/include/c++/11/fstream \
+  /usr/include/c++/11/bits/codecvt.h \
+  /usr/include/x86_64-linux-gnu/c++/11/bits/basic_file.h \
+  /usr/include/x86_64-linux-gnu/c++/11/bits/c++io.h \
+  /usr/include/c++/11/bits/fstream.tcc \
+  /usr/include/c++/11/iomanip \
+  /usr/include/c++/11/locale \
+  /usr/include/c++/11/bits/locale_facets_nonio.h \
+  /usr/include/x86_64-linux-gnu/c++/11/bits/time_members.h \
+  /usr/include/x86_64-linux-gnu/c++/11/bits/messages_members.h \
+  /usr/include/libintl.h \
+  /usr/include/c++/11/bits/locale_facets_nonio.tcc \
+  /usr/include/c++/11/bits/locale_conv.h \
+  /usr/include/c++/11/sstream \
+  /usr/include/c++/11/bits/sstream.tcc
 
+
+/usr/include/x86_64-linux-gnu/c++/11/bits/c++io.h:
+
+/usr/include/x86_64-linux-gnu/c++/11/bits/basic_file.h:
+
+/usr/include/c++/11/fstream:
 
 /usr/include/x86_64-linux-gnu/bits/signal_ext.h:
 
@@ -2762,6 +2783,8 @@ CMakeFiles/myproto_server.dir/main.cpp.o: ../../main.cpp \
 
 /usr/include/c++/11/tuple:
 
+/usr/include/c++/11/bits/fstream.tcc:
+
 /usr/include/asm-generic/posix_types.h:
 
 /usr/include/x86_64-linux-gnu/asm/bitsperlong.h:
@@ -2779,6 +2802,8 @@ CMakeFiles/myproto_server.dir/main.cpp.o: ../../main.cpp \
 /usr/include/c++/11/iomanip:
 
 /usr/include/c++/11/cctype:
+
+/usr/include/c++/11/bits/sstream.tcc:
 
 /usr/include/c++/11/new:
 
@@ -3181,6 +3206,8 @@ CMakeFiles/myproto_server.dir/main.cpp.o: ../../main.cpp \
 /usr/include/x86_64-linux-gnu/bits/types/__FILE.h:
 
 /usr/include/x86_64-linux-gnu/asm/sockios.h:
+
+/usr/include/c++/11/sstream:
 
 /usr/include/muduo/net/InetAddress.h:
 
